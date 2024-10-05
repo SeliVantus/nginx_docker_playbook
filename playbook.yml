@@ -1,0 +1,74 @@
+---
+- name: Deploy NGINX container with Ansible
+  hosts: localhost
+  become: yes
+  vars:
+    dockerfile_src: /home/ilya/Test_Directory/test_exercise/Dockerfile
+    docker_compose_src: /home/ilya/Test_Directory/test_exercise/docker-compose.yml
+    dockerfile_dest: /root/Dockerfile
+    docker_compose_dest: /root/docker-compose.yml
+    ubuntu_container_name: ubuntu-container
+    docker_compose_version: "2.20.2"  # Укажите нужную версию Docker Compose
+
+  tasks:
+    - name: Launch Ubuntu container in privileged mode
+      community.docker.docker_container:
+        name: "{{ ubuntu_container_name }}"
+        image: ubuntu:latest
+        state: started
+        privileged: true
+        command: sleep infinity
+        tty: true
+        ports:
+          - "52022:22"
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+
+    - name: Update apt package manager inside the container
+      command: docker exec {{ ubuntu_container_name }} apt-get update
+      become: yes
+
+    - name: Install Docker inside the container
+      command: docker exec {{ ubuntu_container_name }} apt-get install -y docker.io
+      become: yes
+
+    - name: Install curl inside the container
+      command: docker exec {{ ubuntu_container_name }} apt-get install -y curl
+      become: yes
+
+    - name: Install Docker Compose inside the container
+      shell: >
+        docker exec {{ ubuntu_container_name }} sh -c "curl -L 'https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-linux-x86_64' -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose"
+      become: yes
+
+#    - name: Install Docker Compose inside the container
+ #     shell: >
+  #      docker exec {{ ubuntu_container_name }} sh -c "curl -L 'https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-$(uname -s)-$(uname -m)' -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose"
+   #   become: yes
+
+#    - name: Copy Dockerfile to container
+ #     community.docker.docker_container_copy_into:
+  #      src: "{{ dockerfile_src }}"
+   #     dest: "{{ dockerfile_dest }}"
+    #    container: "{{ ubuntu_container_name }}"
+
+#    - name: Copy docker-compose.yml to container
+ #     community.docker.docker_container_copy_into:
+  #      src: "{{ docker_compose_src }}"
+   #     dest: "{{ docker_compose_dest }}"
+    #    container: "{{ ubuntu_container_name }}"
+    - name: Copy Dockerfile to container
+      command: docker cp "{{ dockerfile_src }}" "{{ ubuntu_container_name }}:{{ dockerfile_dest }}"
+      become: yes
+
+    - name: Copy docker-compose.yml to container
+      command: docker cp "{{ docker_compose_src }}" "{{ ubuntu_container_name }}:{{ docker_compose_dest }}"
+      become: yes
+
+    - name: Build Docker image inside the container
+      command: docker exec {{ ubuntu_container_name }} docker build -t docker-nginx -f "{{ dockerfile_dest }}" /root
+      become: yes
+
+    - name: Run Docker Compose inside the container
+      command: docker exec {{ ubuntu_container_name }} docker-compose -f "{{ docker_compose_dest }}" up -d
+      become: yes
