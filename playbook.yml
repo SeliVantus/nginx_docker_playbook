@@ -8,7 +8,7 @@
     dockerfile_dest: /root/Dockerfile
     docker_compose_dest: /root/docker-compose.yml
     ubuntu_container_name: ubuntu-container
-    docker_compose_version: "2.20.2"  # Укажите нужную версию Docker Compose
+    docker_compose_version: "2.20.2"
 
   tasks:
     - name: Launch Ubuntu container in privileged mode
@@ -41,22 +41,6 @@
         docker exec {{ ubuntu_container_name }} sh -c "curl -L 'https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-linux-x86_64' -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose"
       become: yes
 
-#    - name: Install Docker Compose inside the container
- #     shell: >
-  #      docker exec {{ ubuntu_container_name }} sh -c "curl -L 'https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-$(uname -s)-$(uname -m)' -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose"
-   #   become: yes
-
-#    - name: Copy Dockerfile to container
- #     community.docker.docker_container_copy_into:
-  #      src: "{{ dockerfile_src }}"
-   #     dest: "{{ dockerfile_dest }}"
-    #    container: "{{ ubuntu_container_name }}"
-
-#    - name: Copy docker-compose.yml to container
- #     community.docker.docker_container_copy_into:
-  #      src: "{{ docker_compose_src }}"
-   #     dest: "{{ docker_compose_dest }}"
-    #    container: "{{ ubuntu_container_name }}"
     - name: Copy Dockerfile to container
       command: docker cp "{{ dockerfile_src }}" "{{ ubuntu_container_name }}:{{ dockerfile_dest }}"
       become: yes
